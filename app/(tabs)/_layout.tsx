@@ -51,6 +51,20 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <TabBarIcon name="user-circle" color={color} />,
         }}
       />
+      <Tabs.Screen
+        name="results"
+        options={{
+          href: null,
+          tabBarButton: () => null,
+        }}
+      />
+      <Tabs.Screen
+        name="recipe/[id]"
+        options={{
+          href: null,
+          tabBarButton: () => null,
+        }}
+      />
     </Tabs>
   );
 }

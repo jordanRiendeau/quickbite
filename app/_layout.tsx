@@ -50,8 +50,6 @@ function RootLayoutNav() {
         <QuickBiteProvider>
           <Stack>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="results" options={{ headerShown: false }} />
-          <Stack.Screen name="recipe/[id]" options={{ headerShown: false }} />
           <Stack.Screen name="modal" options={{ presentation: 'modal', headerShown: false }} />
         </Stack>
       </QuickBiteProvider>
