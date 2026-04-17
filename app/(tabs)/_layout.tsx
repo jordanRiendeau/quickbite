@@ -55,14 +55,12 @@ export default function TabLayout() {
         name="results"
         options={{
           href: null,
-          tabBarButton: () => null,
         }}
       />
       <Tabs.Screen
         name="recipe/[id]"
         options={{
           href: null,
-          tabBarButton: () => null,
         }}
       />
     </Tabs>
