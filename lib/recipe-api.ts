@@ -141,19 +141,33 @@ async function searchMealDBByIngredient(ingredient: string, page: number): Promi
     const data = await response.json();
     const meals = Array.isArray(data.meals) ? data.meals : [];
 
-    // Map meals and paginate
-    const recipes = meals.map((meal: any) => ({
-      id: parseInt(meal.idMeal, 10),
-      title: meal.strMeal,
-      image: meal.strMealThumb,
-      readyInMinutes: 30,
-      difficulty: 'Medium',
-      ingredients: [],
-      steps: [],
-      ingredientMatchScore: 1,
-      usedIngredientCount: 0,
-      missedIngredientCount: 0,
-    }));
+    const recipes = await Promise.all(
+      meals.map(async (meal: any) => {
+        const details = await fetchMealDBById(parseInt(meal.idMeal, 10));
+
+        if (details) {
+          return {
+            ...details,
+            ingredientMatchScore: 1,
+            usedIngredientCount: details.ingredients.length,
+            missedIngredientCount: 0,
+          };
+        }
+
+        return {
+          id: parseInt(meal.idMeal, 10),
+          title: meal.strMeal,
+          image: meal.strMealThumb,
+          readyInMinutes: 30,
+          difficulty: 'Medium',
+          ingredients: [ingredient],
+          steps: [],
+          ingredientMatchScore: 1,
+          usedIngredientCount: 1,
+          missedIngredientCount: 0,
+        };
+      }),
+    );
 
     return paginate(recipes, page);
   } catch (error) {
