@@ -43,7 +43,7 @@ Use this file when you want to sanity check the app after a change. The main thi
 - [ ] Click "Remove" → Button goes back to green
 - [ ] Button state persists while on recipe page
 
-### 4b️⃣ Recipe Detail - Add/Remove All
+### 4b️ Recipe Detail - Add/Remove All
 
 - [ ] The top button reads "Add All Ingredients" when nothing from that recipe is in the list
 - [ ] Tap it → All ingredients are added to the shopping list
