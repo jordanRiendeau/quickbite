@@ -12,6 +12,17 @@ export const palette = {
   line: '#F2CBB8',
 };
 
+export const Colors = {
+  light: {
+    text: palette.cocoa,
+    background: palette.cream,
+  },
+  dark: {
+    text: palette.cocoa,
+    background: palette.cream,
+  },
+};
+
 export const spacing = {
   xs: 6,
   sm: 10,
