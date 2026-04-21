@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     Image,
     Pressable,
     SafeAreaView,
@@ -20,8 +21,10 @@ export default function RecipeDetailScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const {
     addItemsToShoppingList,
+    hasRecipeIngredients,
     isRecipeSaved,
     removeShoppingItem,
+    removeRecipeIngredients,
     shoppingItems,
     toggleSavedRecipe,
   } = useQuickBite();
@@ -72,6 +75,8 @@ export default function RecipeDetailScreen() {
   }
 
   const saved = isRecipeSaved(recipe.id);
+  // If every ingredient for this recipe exists in the list, switch to remove-all mode.
+  const ingredientsAdded = hasRecipeIngredients(recipe.id, recipe.ingredients);
 
   const getIngredientShoppingItem = (ingredient: string) => {
     const normalizedIngredient = ingredient.trim().toLowerCase();
@@ -98,8 +103,19 @@ export default function RecipeDetailScreen() {
 
         <Pressable
           style={styles.addButton}
-          onPress={() => addItemsToShoppingList(recipe.ingredients, recipe.id, recipe.title, recipe.image)}>
-          <Text style={styles.addButtonText}>Add Ingredients To Shopping List</Text>
+          onPress={() => {
+            if (ingredientsAdded) {
+              removeRecipeIngredients(recipe.id, recipe.ingredients);
+              return;
+            }
+
+            // Add the whole ingredient set so the shopping list can be populated quickly.
+            addItemsToShoppingList(recipe.ingredients, recipe.id, recipe.title, recipe.image);
+            Alert.alert('Shopping list updated', 'All ingredients added to list.');
+          }}>
+          <Text style={styles.addButtonText}>
+            {ingredientsAdded ? 'Remove All Ingredients' : 'Add All Ingredients'}
+          </Text>
         </Pressable>
 
         <Pressable style={styles.saveButton} onPress={() => toggleSavedRecipe(recipe)}>

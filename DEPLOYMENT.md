@@ -20,7 +20,7 @@ npm run web
 npm start
 ```
 
-3. Scan the QR code with Expo Go app
+1. Scan the QR code with Expo Go app
 2. Test on your actual device
 
 ### Option 3: Android Emulator

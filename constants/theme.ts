@@ -20,6 +20,12 @@ export const spacing = {
   xl: 28,
 };
 
+export const Fonts = {
+  sans: 'System',
+  serif: 'SpaceMono',
+  rounded: 'System',
+};
+
 export const AppTheme: Theme = {
   dark: false,
   colors: {

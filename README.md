@@ -1,40 +1,34 @@
-# 🍽️ QuickBite - What to Cook for Dinner
+# QuickBite
 
-A beautiful, fast recipe app that helps you decide what to make for dinner. Search by ingredients or recipe name, save favorites, and build a smart shopping list.
+QuickBite is a small recipe app for finding dinner ideas, saving recipes, and moving ingredients into a shared shopping list. It is built with Expo Router, React Native, and TypeScript.
 
-**Try it now:** 
-- 🌐 Web: http://localhost:8082 (run `npm run web`)
-- 📱 Mobile: Scan QR code from `npm start`
+Run it locally:
 
----
+- Web: `npm install` then `npm run web`
+- Mobile: `npm install` then `npm start` and scan the QR code in Expo Go
 
-## ✨ Features
+## What it does
 
-- 🔍 **Dual Search** - Find recipes by ingredients OR recipe name with typo correction
-- 💾 **Smart Shopping List** - Add ingredients directly from recipes, grouped by meal
-- ❤️ **Save Favorites** - Keep recipes you love organized by account
-- 👤 **Multi-Account** - Switch between different user accounts instantly
-- 📱 **Cross-Platform** - Same code runs on iOS, Android, and Web
-- ⚡ **Super Fast** - Instant search with retry logic & fallbacks
-- 🎨 **Beautiful UI** - Bright, playful, rounded design with cream/apricot/peach palette
-- 🔄 **Resilient** - Automatic retry on failures + free TheMealDB fallback
+- Search by ingredients or by recipe name.
+- Open a recipe to see the ingredients, steps, and cooking time.
+- Add every ingredient from a recipe to the shopping list, or remove them later.
+- Save recipes to the current account.
+- Keep separate shopping lists and saved recipes for each account.
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
-### Web (No Setup)
+### Web
 ```bash
 npm install
 npm run web
-# Opens http://localhost:8082
 ```
 
 ### Mobile with Expo Go
 ```bash
 npm install
 npm start
-# Scan QR code with Expo Go app (iOS/Android)
 ```
 
 ### Android Emulator
@@ -49,60 +43,38 @@ npm run ios
 
 ---
 
-## 🔑 Environment Variables (Optional)
+## Environment Variables
 
-Default works WITHOUT API key using free TheMealDB! 
+The app works without an API key because it falls back to TheMealDB.
 
-For premium results, create `.env`:
+If you want Spoonacular data, create a `.env` file:
 ```
 EXPO_PUBLIC_SPOONACULAR_API_KEY=your_api_key_here
 ```
 
-Get free tier key at: https://spoonacular.com/food-api
+## How It Works
+
+- Search results come from either ingredient matching or recipe-name search.
+- Recipe details are the main place where ingredients get added to the shopping list.
+- Shopping list data is stored in AsyncStorage, so each account keeps its own items and saved recipes.
+- The shared state lives in [context/quickbite-context.tsx](context/quickbite-context.tsx).
 
 ---
 
-## 📸 How It Works
-
-### Search
-- **Ingredient search**: "chicken, rice, garlic" → Results by match score
-- **Recipe search**: "pasta" with typo correction → 300K+ recipes
-
-### Recipe Detail
-- Full ingredients & quantities
-- Step-by-step instructions
-- Per-ingredient "Add to Shopping List" buttons (toggle green ↔ red)
-
-### Shopping List
-- Items grouped by recipe with image headers
-- Recipe tags on each item
-- Toggle items complete/incomplete
-- Clear all / Clear checked buttons
-
-### Accounts
-- Create multiple accounts instantly
-- Each has separate shopping list & saved recipes
-- Switch accounts mid-session
-- Data persists via AsyncStorage
-
----
-
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Tech |
 |-------|------|
 | **Framework** | React Native + React Native Web (TypeScript) |
 | **Navigation** | Expo Router v6 (tabs + stack) |
-| **APIs** | Spoonacular (premium) + TheMealDB (free fallback) |
+| **APIs** | Spoonacular with TheMealDB as a fallback |
 | **Storage** | AsyncStorage (per-account persistence) |
-| **Resilience** | Exponential backoff retry logic (lib/retry.ts) |
+| **Resilience** | Exponential backoff retry logic in [lib/retry.ts](lib/retry.ts) |
 | **Testing** | Jest (25 unit tests, 100% pass) |
 | **Error Handling** | React Error Boundary component |
 | **Deploy** | Vercel (web) / EAS (native) |
 
----
-
-## 🧪 Testing
+## Testing
 
 ```bash
 # All tests
@@ -118,7 +90,12 @@ npm test -- --watch
 npm run typecheck
 ```
 
-**Test Coverage**: 25+ unit tests for ranking.ts and retry.ts
+The most important files to know are:
+
+- [context/quickbite-context.tsx](context/quickbite-context.tsx) for shared app state.
+- [lib/recipe-api.ts](lib/recipe-api.ts) for recipe fetching and fallback behavior.
+- [lib/ranking.ts](lib/ranking.ts) for ingredient matching and search ordering.
+- [app/(tabs)/results.tsx](app/%28tabs%29/results.tsx) and [app/(tabs)/recipe/[id].tsx](app/%28tabs%29/recipe/%5Bid%5D.tsx) for the recipe flow.
 
 ---
 

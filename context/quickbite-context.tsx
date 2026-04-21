@@ -20,6 +20,8 @@ type QuickBiteContextValue = {
   removeShoppingItem: (itemId: string) => void;
   clearCheckedItems: () => void;
   clearAllShoppingItems: () => void;
+  hasRecipeIngredients: (recipeId: number, ingredients: string[]) => boolean;
+  removeRecipeIngredients: (recipeId: number, ingredients: string[]) => void;
   saveRecipe: (recipe: Recipe) => void;
   removeSavedRecipe: (recipeId: number) => void;
   toggleSavedRecipe: (recipe: Recipe) => void;
@@ -36,6 +38,10 @@ const guestAccount: UserAccount = {
 };
 
 const QuickBiteContext = createContext<QuickBiteContextValue | null>(null);
+
+function normalizeIngredientName(ingredient: string) {
+  return ingredient.trim().toLowerCase();
+}
 
 export function QuickBiteProvider({ children }: { children: React.ReactNode }) {
   const [accounts, setAccounts] = useState<UserAccount[]>([guestAccount]);
@@ -211,6 +217,41 @@ export function QuickBiteProvider({ children }: { children: React.ReactNode }) {
           ...current,
           [activeAccount.id]: [],
         }));
+      },
+      hasRecipeIngredients: (recipeId: number, ingredients: string[]) => {
+        const requiredIngredients = ingredients.map(normalizeIngredientName).filter(Boolean);
+
+        if (requiredIngredients.length === 0) {
+          return false;
+        }
+
+        const activeItems = shoppingItems.filter((item) => item.recipeId === recipeId);
+        const activeIngredientNames = new Set(
+          activeItems.map((item) => normalizeIngredientName(item.name)),
+        );
+
+        return requiredIngredients.every((ingredient) => activeIngredientNames.has(ingredient));
+      },
+      /**
+       * Remove every shopping-list item that belongs to a recipe and matches its ingredient list.
+       * This keeps recipe-level add/remove buttons in sync with the current account.
+       */
+      removeRecipeIngredients: (recipeId: number, ingredients: string[]) => {
+        const targetIngredients = new Set(
+          ingredients.map(normalizeIngredientName).filter(Boolean),
+        );
+
+        setShoppingByAccount((current) => {
+          const existing = current[activeAccount.id] ?? [];
+
+          return {
+            ...current,
+            [activeAccount.id]: existing.filter(
+              (item) =>
+                !(item.recipeId === recipeId && targetIngredients.has(normalizeIngredientName(item.name))),
+            ),
+          };
+        });
       },
       saveRecipe: (recipe: Recipe) => {
         setSavedByAccount((current) => {

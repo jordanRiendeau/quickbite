@@ -2,6 +2,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     ActivityIndicator,
+    Alert,
     FlatList,
     Pressable,
     SafeAreaView,
@@ -19,7 +20,13 @@ import type { Difficulty, Recipe, SearchMode, SortOption } from '@/types/recipe'
 
 export default function ResultsScreen() {
   const params = useLocalSearchParams<{ q?: string; mode?: SearchMode }>();
-  const { addItemsToShoppingList, isRecipeSaved, toggleSavedRecipe } = useQuickBite();
+  const {
+    addItemsToShoppingList,
+    hasRecipeIngredients,
+    isRecipeSaved,
+    removeRecipeIngredients,
+    toggleSavedRecipe,
+  } = useQuickBite();
 
   const query = (params.q ?? '').trim();
   const mode: SearchMode = params.mode === 'recipe' ? 'recipe' : 'ingredients';
@@ -202,24 +209,30 @@ export default function ResultsScreen() {
           data={filtered}
           keyExtractor={(item) => String(item.id)}
           contentContainerStyle={styles.listContent}
-          renderItem={({ item }) => (
-            <RecipeCard
-              recipe={item}
-              mode={mode}
-              onOpen={() => router.push(`/recipe/${item.id}`)}
-              onAddIngredients={() => {
-                const missingCount = Math.max(item.missedIngredientCount, 0);
-                const nextItems =
-                  mode === 'ingredients' && missingCount > 0
-                    ? item.ingredients.slice(-missingCount)
-                    : item.ingredients;
+          renderItem={({ item }) => {
+            // Derive button state from shared shopping-list state so cards stay in sync.
+            const ingredientsAdded = hasRecipeIngredients(item.id, item.ingredients);
 
-                addItemsToShoppingList(nextItems, item.id, item.title, item.image);
-              }}
-              onToggleSave={() => toggleSavedRecipe(item)}
-              isSaved={isRecipeSaved(item.id)}
-            />
-          )}
+            return (
+              <RecipeCard
+                recipe={item}
+                onOpen={() => router.push(`/recipe/${item.id}`)}
+                onToggleIngredients={() => {
+                  if (ingredientsAdded) {
+                    removeRecipeIngredients(item.id, item.ingredients);
+                    return;
+                  }
+
+                  // Recipe-level action: add every ingredient for this recipe in one tap.
+                  addItemsToShoppingList(item.ingredients, item.id, item.title, item.image);
+                  Alert.alert('Shopping list updated', 'All ingredients added to list.');
+                }}
+                ingredientsAdded={ingredientsAdded}
+                onToggleSave={() => toggleSavedRecipe(item)}
+                isSaved={isRecipeSaved(item.id)}
+              />
+            );
+          }}
           ListEmptyComponent={
             <Text style={styles.emptyText}>
               No recipes found. Try different ingredients or a broader recipe name.

@@ -1,20 +1,20 @@
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { palette, spacing } from '@/constants/theme';
-import type { Recipe, SearchMode } from '@/types/recipe';
+import type { Recipe } from '@/types/recipe';
 
 export function RecipeCard({
   recipe,
-  mode,
   onOpen,
-  onAddIngredients,
+  onToggleIngredients,
+  ingredientsAdded,
   onToggleSave,
   isSaved = false,
 }: {
   recipe: Recipe;
-  mode: SearchMode;
   onOpen: () => void;
-  onAddIngredients: () => void;
+  onToggleIngredients: () => void;
+  ingredientsAdded: boolean;
   onToggleSave: () => void;
   isSaved?: boolean;
 }) {
@@ -52,9 +52,9 @@ export function RecipeCard({
         <Pressable style={[styles.button, styles.primaryButton]} onPress={onOpen}>
           <Text style={styles.primaryText}>View Recipe</Text>
         </Pressable>
-        <Pressable style={[styles.button, styles.secondaryButton]} onPress={onAddIngredients}>
+        <Pressable style={[styles.button, styles.secondaryButton]} onPress={onToggleIngredients}>
           <Text style={styles.secondaryText}>
-            {mode === 'ingredients' ? 'Add Missing' : 'Add Ingredients'}
+            {ingredientsAdded ? 'Remove All Ingredients' : 'Add All Ingredients'}
           </Text>
         </Pressable>
       </View>

@@ -1,38 +1,16 @@
-# 🧪 QuickBite Testing Checklist
+# QuickBite Testing Notes
 
-**Date Started**: April 16, 2026  
-**Status**: 🟢 Ready for User Testing
+Use this file when you want to sanity check the app after a change. The main things worth verifying are search, recipe details, shopping-list behavior, and account switching.
 
----
+## Automated Checks
 
-## ✅ Pre-Deployment Verification
+- [x] Unit tests pass with `npm test`
+- [x] TypeScript checks pass with `npm run typecheck`
+- [x] The app starts without console errors
+- [x] The error boundary renders when a screen throws
+- [x] Ranking and retry logic behave as expected
 
-### Code Quality
-
-- [x] All 22 unit tests pass (`npm test`)
-- [x] TypeScript strict mode: 0 errors (`npm run typecheck`)
-- [x] No console errors on startup
-- [x] Error Boundary properly wraps app
-
-### Core Features (Automated Tests)
-
-- [x] Levenshtein distance algorithm (17 tests)
-  - [x] Exact matches
-  - [x] Single character differences
-  - [x] Empty string handling
-  - [x] Whitespace trimming
-  - [x] Case insensitivity
-
-- [x] Retry logic with exponential backoff (5 tests)
-  - [x] First attempt success (no retry needed)
-  - [x] Retry with eventual success
-  - [x] Max attempts exhaustion
-  - [x] OnRetry callback execution
-  - [x] Exponential delay verification
-
----
-
-## 🧑‍💻 Manual Testing Checklist
+## Manual Checklist
 
 ### 1️⃣ App Launch
 
@@ -48,7 +26,7 @@
 - [ ] Click recipe card → Recipe detail opens
 - [ ] See ingredients list with quantities
 - [ ] See cooking steps
-- [ ] "Add Ingredient" buttons are green
+- [ ] "Add All Ingredients" appears on the results card and recipe page
 
 ### 3️⃣ Recipe Search
 
@@ -64,6 +42,14 @@
 - [ ] Button text changes to "Remove Ingredient"
 - [ ] Click "Remove" → Button goes back to green
 - [ ] Button state persists while on recipe page
+
+### 4b️⃣ Recipe Detail - Add/Remove All
+
+- [ ] The top button reads "Add All Ingredients" when nothing from that recipe is in the list
+- [ ] Tap it → All ingredients are added to the shopping list
+- [ ] A popup says "All ingredients added to list"
+- [ ] The button changes to "Remove All Ingredients"
+- [ ] Tap it again → All ingredients from that recipe are removed
 
 ### 5️⃣ Shopping List
 
@@ -101,7 +87,7 @@
 
 - [ ] Delete/comment out `EXPO_PUBLIC_SPOONACULAR_API_KEY`
 - [ ] Search still works (uses TheMealDB)
-- [ ] Takes ~200-300ms instead of ~500ms
+- [ ] Search still returns usable recipes without a key
 - [ ] Results are valid recipes
 
 ### 9️⃣ Error Handling
@@ -184,6 +170,7 @@
 - ✅ Debug mode enabled by default → Now requires explicit `true`
 - ✅ Continuous loading loop → Fixed with in-flight request guard
 - ✅ API quota failures → Added TheMealDB fallback
+- ✅ Recipe-level ingredient button only added items once → Now toggles add all/remove all and shows a confirmation popup
 
 ---
 
@@ -199,64 +186,11 @@
 6. Missing features?
 7. Performance issues?
 
-### How to Gather Feedback
+## Feedback
 
-- [ ] Share link with 3-5 beta testers
-- [ ] Ask them to fill out quick survey/send messages
-- [ ] Track which features people use most
-- [ ] Note what they get confused about
-
----
-
-## 🚀 Deployment Checklist
-
-### Before Going Live
-
-- [ ] All manual tests pass ✅
-- [ ] No critical console errors ✅
-- [ ] Images load properly ✅
-- [ ] API fallback works ✅
-- [ ] Error boundary catches crashes ✅
-
-### Deploy to Web (Vercel)
-
-- [ ] Push to GitHub
-- [ ] Connect to Vercel
-- [ ] Add env var: `EXPO_PUBLIC_SPOONACULAR_API_KEY`
-- [ ] Deploy completes successfully
-- [ ] Test live URL works
-
-### Deploy to Mobile (Expo Go)
-
-- [ ] Run `npm start`
-- [ ] Generate QR code
-- [ ] Share QR code with testers
-- [ ] Testers scan with Expo Go
-- [ ] Verify each device type works
-
----
-
-## ✨ Quality Metrics
-
-| Metric | Target | Actual |
-|--------|--------|--------|
-| Unit Tests | >90% pass | 22/22 ✅ |
-| TypeScript Strict | 0 errors | 0 ✅ |
-| Bundle Size | <5MB | 3.6MB ✅ |
-| First Load | <20sec | ~10-15sec ✅ |
-| Search Latency | <1000ms | 200-500ms ✅ |
-| Availability | 99% | ~100% (w/ fallback) ✅ |
-
----
-
-## 🎓 Testing Best Practices Applied
-
-✅ **Unit tests** - Edge cases for core logic  
-✅ **Integration tests** (manual) - Real API calls  
-✅ **Error boundaries** - Graceful crash handling  
-✅ **Retry logic** - Network resilience  
-✅ **Type safety** - Catch bugs at compile time  
-✅ **Fallback APIs** - No single point of failure  
+- Share the app with a few people and watch where they hesitate.
+- Note whether the ingredient toggle is obvious without explanation.
+- Write down any missing recipes, confusing labels, or slow screens.
 
 ---
 

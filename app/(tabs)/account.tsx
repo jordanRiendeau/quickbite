@@ -24,7 +24,7 @@ export default function AccountScreen() {
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.content}>
         <Text style={styles.title}>Account</Text>
-        <Text style={styles.subtitle}>Guest mode is active by default for the MVP.</Text>
+        <Text style={styles.subtitle}>Manage profiles and keep your favorite recipes in one place.</Text>
 
         <View style={styles.activeCard}>
           <Text style={styles.cardLabel}>Current account</Text>
@@ -76,8 +76,16 @@ export default function AccountScreen() {
 
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Saved recipes</Text>
+          <Text style={styles.sectionHint}>
+            This is your favorites shelf. Save recipes from Cook, then reopen them here anytime.
+          </Text>
           {savedRecipes.length === 0 ? (
-            <Text style={styles.emptyText}>No saved recipes yet. Save one from search results.</Text>
+            <View style={styles.emptyWrap}>
+              <Text style={styles.emptyText}>No saved recipes yet.</Text>
+              <Pressable style={styles.savedActionButton} onPress={() => router.push('/')}>
+                <Text style={styles.savedActionText}>Go to Cook</Text>
+              </Pressable>
+            </View>
           ) : (
             <View style={styles.savedList}>
               {savedRecipes.map((recipe) => (
@@ -211,6 +219,15 @@ const styles = StyleSheet.create({
   emptyText: {
     color: palette.cocoaFaded,
     fontSize: 13,
+  },
+  sectionHint: {
+    color: palette.cocoaFaded,
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  emptyWrap: {
+    gap: 10,
+    alignItems: 'flex-start',
   },
   savedList: {
     gap: 10,
