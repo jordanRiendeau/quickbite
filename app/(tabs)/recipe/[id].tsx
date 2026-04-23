@@ -99,7 +99,37 @@ export default function RecipeDetailScreen() {
         <Text style={styles.title}>{recipe.title}</Text>
         <Text style={styles.meta}>
           {recipe.readyInMinutes} min | {recipe.difficulty}
+          {recipe.cuisine ? ` | ${recipe.cuisine}` : ''}
         </Text>
+
+        <View style={styles.nutritionCard}>
+          <Text style={styles.nutritionTitle}>Nutrition Facts (per serving)</Text>
+          {recipe.nutrition ? (
+            <>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Calories</Text>
+                <Text style={styles.nutritionValue}>{recipe.nutrition.calories} kcal</Text>
+              </View>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Protein</Text>
+                <Text style={styles.nutritionValue}>{recipe.nutrition.proteinGrams} g</Text>
+              </View>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Fat</Text>
+                <Text style={styles.nutritionValue}>{recipe.nutrition.fatGrams} g</Text>
+              </View>
+              <View style={styles.nutritionRow}>
+                <Text style={styles.nutritionLabel}>Carbs</Text>
+                <Text style={styles.nutritionValue}>{recipe.nutrition.carbsGrams} g</Text>
+              </View>
+              {recipe.nutrition.isEstimated ? (
+                <Text style={styles.nutritionHint}>Estimated values based on recipe structure.</Text>
+              ) : null}
+            </>
+          ) : (
+            <Text style={styles.nutritionHint}>Nutrition facts are not available for this recipe.</Text>
+          )}
+        </View>
 
         <Pressable
           style={styles.addButton}
@@ -221,6 +251,41 @@ const styles = StyleSheet.create({
     color: palette.cocoaFaded,
     fontSize: 14,
     fontWeight: '700',
+  },
+  nutritionCard: {
+    marginTop: 8,
+    borderWidth: 1,
+    borderColor: '#F2D5C7',
+    borderRadius: 14,
+    padding: spacing.sm,
+    backgroundColor: '#FFFDF8',
+    gap: 6,
+  },
+  nutritionTitle: {
+    color: palette.cocoa,
+    fontSize: 14,
+    fontWeight: '900',
+  },
+  nutritionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  nutritionLabel: {
+    color: palette.cocoaFaded,
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  nutritionValue: {
+    color: palette.cocoa,
+    fontSize: 13,
+    fontWeight: '800',
+  },
+  nutritionHint: {
+    color: palette.cocoaFaded,
+    fontSize: 12,
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   addButton: {
     backgroundColor: palette.tomato,

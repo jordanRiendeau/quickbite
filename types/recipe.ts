@@ -16,12 +16,22 @@ export type Recipe = {
   image: string;
   readyInMinutes: number;
   difficulty: Difficulty;
+  cuisine?: string;
+  nutrition?: NutritionFacts;
   ingredients: string[];
   steps: string[];
   sourceUrl?: string;
   ingredientMatchScore: number;
   usedIngredientCount: number;
   missedIngredientCount: number;
+};
+
+export type NutritionFacts = {
+  calories: number;
+  proteinGrams: number;
+  fatGrams: number;
+  carbsGrams: number;
+  isEstimated?: boolean;
 };
 
 export type SavedRecipe = Pick<

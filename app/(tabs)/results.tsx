@@ -6,6 +6,7 @@ import {
     FlatList,
     Pressable,
     SafeAreaView,
+    ScrollView,
     StyleSheet,
     Text,
     View,
@@ -149,53 +150,76 @@ export default function ResultsScreen() {
       {mode === 'ingredients' ? (
         <View style={styles.filtersWrap}>
           <Text style={styles.filtersTitle}>Filters & Relevance</Text>
-          <View style={styles.filterRow}>
-            <SmallPill
-              label="Any time"
-              active={maxTime === null}
-              onPress={() => setMaxTime(null)}
-            />
-            <SmallPill label="<= 20 min" active={maxTime === 20} onPress={() => setMaxTime(20)} />
-            <SmallPill label="<= 40 min" active={maxTime === 40} onPress={() => setMaxTime(40)} />
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterGroupTitle}>Time</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRowContent}
+            >
+              <SmallPill
+                label="Any time"
+                active={maxTime === null}
+                onPress={() => setMaxTime(null)}
+              />
+              <SmallPill label="Up to 20 min" active={maxTime === 20} onPress={() => setMaxTime(20)} />
+              <SmallPill label="Up to 40 min" active={maxTime === 40} onPress={() => setMaxTime(40)} />
+            </ScrollView>
           </View>
-          <View style={styles.filterRow}>
-            <SmallPill
-              label="Any difficulty"
-              active={difficulty === 'Any'}
-              onPress={() => setDifficulty('Any')}
-            />
-            <SmallPill
-              label="Easy"
-              active={difficulty === 'Easy'}
-              onPress={() => setDifficulty('Easy')}
-            />
-            <SmallPill
-              label="Medium"
-              active={difficulty === 'Medium'}
-              onPress={() => setDifficulty('Medium')}
-            />
-            <SmallPill
-              label="Hard"
-              active={difficulty === 'Hard'}
-              onPress={() => setDifficulty('Hard')}
-            />
+
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterGroupTitle}>Difficulty</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRowContent}
+            >
+              <SmallPill
+                label="Any difficulty"
+                active={difficulty === 'Any'}
+                onPress={() => setDifficulty('Any')}
+              />
+              <SmallPill
+                label="Easy"
+                active={difficulty === 'Easy'}
+                onPress={() => setDifficulty('Easy')}
+              />
+              <SmallPill
+                label="Medium"
+                active={difficulty === 'Medium'}
+                onPress={() => setDifficulty('Medium')}
+              />
+              <SmallPill
+                label="Hard"
+                active={difficulty === 'Hard'}
+                onPress={() => setDifficulty('Hard')}
+              />
+            </ScrollView>
           </View>
-          <View style={styles.filterRow}>
-            <SmallPill
-              label="Rank: Ingredient match"
-              active={sortBy === 'ingredient'}
-              onPress={() => setSortBy('ingredient')}
-            />
-            <SmallPill
-              label="Rank: Time"
-              active={sortBy === 'time'}
-              onPress={() => setSortBy('time')}
-            />
-            <SmallPill
-              label="Rank: Difficulty"
-              active={sortBy === 'difficulty'}
-              onPress={() => setSortBy('difficulty')}
-            />
+
+          <View style={styles.filterGroup}>
+            <Text style={styles.filterGroupTitle}>Sort by</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRowContent}
+            >
+              <SmallPill
+                label="Best match"
+                active={sortBy === 'ingredient'}
+                onPress={() => setSortBy('ingredient')}
+              />
+              <SmallPill
+                label="Fastest"
+                active={sortBy === 'time'}
+                onPress={() => setSortBy('time')}
+              />
+              <SmallPill
+                label="Easiest"
+                active={sortBy === 'difficulty'}
+                onPress={() => setSortBy('difficulty')}
+              />
+            </ScrollView>
           </View>
         </View>
       ) : null}
@@ -339,10 +363,20 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: '900',
   },
-  filterRow: {
+  filterGroup: {
+    gap: 6,
+  },
+  filterGroupTitle: {
+    color: palette.cocoaFaded,
+    fontSize: 12,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  filterRowContent: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: 8,
+    paddingRight: spacing.md,
   },
   pill: {
     borderRadius: 999,

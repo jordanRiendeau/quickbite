@@ -32,6 +32,7 @@ export function RecipeCard({
           <Text style={styles.meta}>
             {recipe.readyInMinutes} min | {recipe.difficulty}
           </Text>
+          {recipe.cuisine ? <Text style={styles.metaMuted}>Cuisine: {recipe.cuisine}</Text> : null}
           <Text style={styles.metaMuted}>
             Match {(recipe.ingredientMatchScore * 100).toFixed(0)}% ({recipe.usedIngredientCount} used)
           </Text>

@@ -80,6 +80,9 @@ EXPO_PUBLIC_SPOONACULAR_API_KEY=your_api_key_here
 # All tests
 npm test
 
+# Lint
+npm run lint
+
 # Specific file
 npm test -- lib/ranking.test.ts
 
@@ -107,16 +110,17 @@ quickbite/
 │   ├── _layout.tsx               # Root layout with ErrorBoundary
 │   ├── (tabs)/                   # Tab navigation
 │   │   ├── index.tsx             # Home search screen
+│   │   ├── results.tsx           # Search results with filters + load more
+│   │   ├── recipe/[id].tsx       # Recipe detail screen
 │   │   ├── shopping-list.tsx     # Shopping list with grouping
 │   │   └── account.tsx           # Account & saved recipes
-│   ├── results.tsx               # Search results with Load More
-│   └── recipe/[id].tsx           # Recipe detail screen
 ├── lib/                          # Business logic & utilities
 │   ├── recipe-api.ts             # Spoonacular + TheMealDB
 │   ├── retry.ts                  # Exponential backoff utility
 │   ├── ranking.ts                # Typo correction & sorting
-│   ├── ranking.test.ts           # 17 tests
-│   └── retry.test.ts             # 5 tests
+│   ├── ranking.test.ts
+│   ├── retry.test.ts
+│   └── recipe-api.test.ts        # API mapping tests
 ├── components/                   # Reusable components
 │   ├── ErrorBoundary.tsx         # Error handling UI
 │   └── RecipeCard.tsx            # Recipe card component
@@ -126,7 +130,6 @@ quickbite/
 │   └── recipe.ts                 # TypeScript interfaces
 ├── constants/
 │   └── theme.ts                  # Color palette & styling
-├── data/                         # (removed mock recipes)
 ├── DEPLOYMENT.md                 # Full deployment guide
 └── jest.config.js               # Jest test configuration
 ```

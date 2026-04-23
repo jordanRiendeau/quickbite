@@ -1,6 +1,11 @@
+import { errorLogger } from '@/lib/error-logger';
 import { computeDifficulty, pickCorrectedQuery } from '@/lib/ranking';
 import { retryWithBackoff } from '@/lib/retry';
-import type { Recipe, RecipeSearchPage } from '@/types/recipe';
+import {
+  validateMealDBResponse,
+  validateSpoonacularResponse
+} from '@/lib/validation';
+import type { NutritionFacts, Recipe, RecipeSearchPage } from '@/types/recipe';
 
 const SPOONACULAR_BASE = 'https://api.spoonacular.com/recipes';
 const MEALDB_BASE = 'https://www.themealdb.com/api/json/v1/1';
@@ -26,6 +31,68 @@ function parseIngredients(input: string): string[] {
     .filter(Boolean);
 }
 
+function estimateReadyInMinutes(ingredientCount: number, stepCount: number): number {
+  const safeIngredients = Math.max(ingredientCount, 1);
+  const safeSteps = Math.max(stepCount, 1);
+  const estimate = 8 + safeIngredients * 2 + safeSteps * 6;
+
+  return Math.min(Math.max(estimate, 15), 90);
+}
+
+function estimateNutrition(ingredientCount: number, stepCount: number): NutritionFacts {
+  const safeIngredients = Math.max(ingredientCount, 1);
+  const safeSteps = Math.max(stepCount, 1);
+
+  const calories = Math.round(220 + safeIngredients * 45 + safeSteps * 12);
+  const proteinGrams = Math.round(10 + safeIngredients * 1.8);
+  const fatGrams = Math.round(8 + safeIngredients * 1.2);
+  const carbsGrams = Math.round(18 + safeIngredients * 3.2);
+
+  return {
+    calories,
+    proteinGrams,
+    fatGrams,
+    carbsGrams,
+    isEstimated: true,
+  };
+}
+
+function getNutrientValue(nutrients: any[], targetName: string): number | null {
+  const nutrient = nutrients.find(
+    (item) => typeof item?.name === 'string' && item.name.toLowerCase() === targetName.toLowerCase(),
+  );
+
+  if (!nutrient || typeof nutrient.amount !== 'number') {
+    return null;
+  }
+
+  return Math.round(nutrient.amount);
+}
+
+function mapSpoonacularNutrition(payload: any): NutritionFacts | undefined {
+  const nutrients = Array.isArray(payload?.nutrition?.nutrients) ? payload.nutrition.nutrients : [];
+
+  if (nutrients.length === 0) {
+    return undefined;
+  }
+
+  const calories = getNutrientValue(nutrients, 'Calories');
+  const proteinGrams = getNutrientValue(nutrients, 'Protein');
+  const fatGrams = getNutrientValue(nutrients, 'Fat');
+  const carbsGrams = getNutrientValue(nutrients, 'Carbohydrates');
+
+  if (calories === null || proteinGrams === null || fatGrams === null || carbsGrams === null) {
+    return undefined;
+  }
+
+  return {
+    calories,
+    proteinGrams,
+    fatGrams,
+    carbsGrams,
+  };
+}
+
 /**
  * Map Spoonacular API response to Recipe format
  */
@@ -47,6 +114,8 @@ function mapSpoonacularRecipe(payload: any): Recipe {
     image: payload.image,
     readyInMinutes: payload.readyInMinutes ?? 0,
     difficulty: computeDifficulty(payload.readyInMinutes ?? 0),
+    cuisine: Array.isArray(payload.cuisines) && payload.cuisines.length > 0 ? payload.cuisines[0] : undefined,
+    nutrition: mapSpoonacularNutrition(payload),
     ingredients,
     steps,
     sourceUrl: payload.sourceUrl,
@@ -79,12 +148,16 @@ function mapMealToRecipe(meal: any): Recipe {
         .filter(Boolean)
     : [];
 
+  const readyInMinutes = estimateReadyInMinutes(ingredients.length, steps.length);
+
   return {
     id: parseInt(meal.idMeal, 10),
     title: meal.strMeal,
     image: meal.strMealThumb,
-    readyInMinutes: 30, // TheMealDB doesn't provide cooking time, default to 30
-    difficulty: 'Medium', // TheMealDB doesn't provide difficulty
+    readyInMinutes,
+    difficulty: computeDifficulty(readyInMinutes),
+    cuisine: typeof meal.strArea === 'string' && meal.strArea.trim() ? meal.strArea.trim() : undefined,
+    nutrition: estimateNutrition(ingredients.length, steps.length),
     ingredients,
     steps,
     sourceUrl: meal.strSource || undefined,
@@ -116,7 +189,16 @@ async function fetchSpoonacularJson(
     throw new Error(`SPOONACULAR_${response.status}`);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  // Validate response structure before returning
+  try {
+    return validateSpoonacularResponse(data);
+  } catch (validationError) {
+    errorLogger.captureValidationError('spoonacular', validationError as Error, data);
+    // Return data anyway; mappers will handle invalid fields gracefully
+    return data;
+  }
 }
 
 async function fetchWithRetry(path: string, searchParams: Record<string, string | number | boolean>) {
@@ -139,6 +221,15 @@ async function searchMealDBByIngredient(ingredient: string, page: number): Promi
     if (!response.ok) throw new Error(`MEALDB_${response.status}`);
 
     const data = await response.json();
+
+    // Validate response structure
+    try {
+      validateMealDBResponse(data);
+    } catch (validationError) {
+      errorLogger.captureValidationError('mealdb', validationError as Error, data);
+      // Continue anyway
+    }
+
     const meals = Array.isArray(data.meals) ? data.meals : [];
 
     const recipes = await Promise.all(
@@ -160,6 +251,8 @@ async function searchMealDBByIngredient(ingredient: string, page: number): Promi
           image: meal.strMealThumb,
           readyInMinutes: 30,
           difficulty: 'Medium',
+          cuisine: undefined,
+          nutrition: estimateNutrition(1, 1),
           ingredients: [ingredient],
           steps: [],
           ingredientMatchScore: 1,
@@ -171,7 +264,7 @@ async function searchMealDBByIngredient(ingredient: string, page: number): Promi
 
     return paginate(recipes, page);
   } catch (error) {
-    console.warn('[TheMealDB] Ingredient search failed:', error);
+    errorLogger.captureAPIError('mealdb', error as Error, 1);
     return { recipes: [], hasMore: false };
   }
 }
@@ -185,12 +278,21 @@ async function searchMealDBByName(query: string, page: number): Promise<RecipeSe
     if (!response.ok) throw new Error(`MEALDB_${response.status}`);
 
     const data = await response.json();
+
+    // Validate response structure
+    try {
+      validateMealDBResponse(data);
+    } catch (validationError) {
+      errorLogger.captureValidationError('mealdb', validationError as Error, data);
+      // Continue anyway
+    }
+
     const meals = Array.isArray(data.meals) ? data.meals : [];
 
     const recipes = meals.map(mapMealToRecipe);
     return paginate(recipes, page);
   } catch (error) {
-    console.warn('[TheMealDB] Recipe search failed:', error);
+    errorLogger.captureAPIError('mealdb', error as Error, 1);
     return { recipes: [], hasMore: false };
   }
 }
@@ -204,12 +306,21 @@ async function fetchMealDBById(id: number): Promise<Recipe | null> {
     if (!response.ok) throw new Error(`MEALDB_${response.status}`);
 
     const data = await response.json();
+
+    // Validate response structure
+    try {
+      validateMealDBResponse(data);
+    } catch (validationError) {
+      errorLogger.captureValidationError('mealdb', validationError as Error, data);
+      // Continue anyway
+    }
+
     const meals = Array.isArray(data.meals) ? data.meals : [];
 
     if (meals.length === 0) return null;
     return mapMealToRecipe(meals[0]);
   } catch (error) {
-    console.warn('[TheMealDB] Meal lookup failed:', error);
+    errorLogger.captureAPIError('mealdb', error as Error, 1);
     return null;
   }
 }
@@ -238,48 +349,50 @@ export async function searchByIngredients(
   }
 
   try {
-    const ingredientResponse = await fetchWithRetry('/findByIngredients', {
-      ingredients: ingredients.join(','),
+    const searchResponse = await fetchWithRetry('/complexSearch', {
+      includeIngredients: ingredients.join(','),
       number: PAGE_SIZE,
       offset: page * PAGE_SIZE,
-      ranking: 1,
       ignorePantry: true,
+      addRecipeInformation: true,
+      addRecipeNutrition: true,
+      fillIngredients: true,
+      sort: 'max-used-ingredients',
+      sortDirection: 'desc',
     });
 
-    const rows = Array.isArray(ingredientResponse) ? ingredientResponse : [];
+    const rows = Array.isArray(searchResponse.results) ? searchResponse.results : [];
+    const totalResults =
+      typeof searchResponse.totalResults === 'number' ? searchResponse.totalResults : undefined;
 
     if (rows.length === 0) {
       return { recipes: [], hasMore: false };
     }
 
-    const ids = rows.map((item: any) => item.id).join(',');
-    const detailResponse = await fetchWithRetry('/informationBulk', {
-      ids,
-      includeNutrition: false,
-    });
-
-    const detailMap = new Map<number, any>();
-    (Array.isArray(detailResponse) ? detailResponse : []).forEach((item: any) => {
-      detailMap.set(item.id, item);
-    });
-
     const recipes = rows
       .map((item: any) => {
-        const details = detailMap.get(item.id);
-        if (!details) {
+        if (!item) {
           return null;
         }
 
         return mapSpoonacularRecipe({
-          ...details,
+          ...item,
           usedIngredientCount: item.usedIngredientCount,
           missedIngredientCount: item.missedIngredientCount,
         });
       })
       .filter(Boolean) as Recipe[];
 
-    return paginate(recipes, page);
+    // complexSearch already applies offset/number, so do not paginate again.
+    return {
+      recipes,
+      hasMore:
+        typeof totalResults === 'number'
+          ? page * PAGE_SIZE + recipes.length < totalResults
+          : rows.length === PAGE_SIZE,
+    };
   } catch (error) {
+    errorLogger.captureAPIError('spoonacular', error as Error, 3);
     console.warn('[Spoonacular] Ingredient search failed, falling back to TheMealDB:', error);
     // Fallback to TheMealDB
     const firstIngredient = ingredients[0];
@@ -323,15 +436,27 @@ export async function searchByRecipeQuery(rawQuery: string, page: number): Promi
       number: PAGE_SIZE,
       offset: page * PAGE_SIZE,
       addRecipeInformation: true,
+      addRecipeNutrition: true,
       fillIngredients: true,
       sortDirection: 'desc',
     });
 
     const rows = Array.isArray(searchResponse.results) ? searchResponse.results : [];
+    const totalResults =
+      typeof searchResponse.totalResults === 'number' ? searchResponse.totalResults : undefined;
     const recipes = rows.map(mapSpoonacularRecipe);
 
-    return paginate(recipes, page);
+    // complexSearch already applies offset/number, so do not paginate again.
+    return {
+      recipes,
+      hasMore:
+        typeof totalResults === 'number'
+          ? page * PAGE_SIZE + recipes.length < totalResults
+          : rows.length === PAGE_SIZE,
+      correctedQuery,
+    };
   } catch (error) {
+    errorLogger.captureAPIError('spoonacular', error as Error, 3);
     console.warn('[Spoonacular] Recipe search failed, falling back to TheMealDB:', error);
     // Fallback to TheMealDB
     return searchMealDBByName(query, page);
@@ -348,12 +473,18 @@ export async function fetchRecipeById(id: number): Promise<Recipe | null> {
 
   try {
     const payload = await fetchWithRetry(`/${id}/information`, {
-      includeNutrition: false,
+      includeNutrition: true,
     });
     return mapSpoonacularRecipe(payload);
   } catch (error) {
+    errorLogger.captureAPIError('spoonacular', error as Error, 3);
     console.warn('[Spoonacular] Recipe fetch failed, falling back to TheMealDB:', error);
     // Fallback to TheMealDB
     return fetchMealDBById(id);
   }
 }
+
+export const __testables = {
+  mapSpoonacularRecipe,
+  mapMealToRecipe,
+};

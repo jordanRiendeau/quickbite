@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { createDebounce } from '@/lib/debounce';
+import { errorLogger } from '@/lib/error-logger';
 import type { Recipe, SavedRecipe, ShoppingItem, UserAccount } from '@/types/recipe';
 
 type ShoppingMap = Record<string, ShoppingItem[]>;
@@ -50,6 +52,29 @@ export function QuickBiteProvider({ children }: { children: React.ReactNode }) {
   const [savedByAccount, setSavedByAccount] = useState<SavedRecipeMap>({ [GUEST_ACCOUNT_ID]: [] });
   const [loading, setLoading] = useState(true);
 
+  // Debounce AsyncStorage writes to batch rapid state changes
+  const lastStateRef = useRef<{
+    accounts: UserAccount[];
+    activeAccountId: string;
+    shoppingByAccount: ShoppingMap;
+    savedByAccount: SavedRecipeMap;
+  } | null>(null);
+
+  const debouncedSave = useMemo(
+    () =>
+      createDebounce(async (state: typeof lastStateRef.current) => {
+        if (!state) return;
+
+        try {
+          const payload = JSON.stringify(state);
+          await AsyncStorage.setItem(STORAGE_KEY, payload);
+        } catch (err) {
+          errorLogger.captureStorageError('write', err as Error);
+        }
+      }, 1000), // Batch writes within 1 second
+    [],
+  );
+
   useEffect(() => {
     let mounted = true;
 
@@ -79,7 +104,8 @@ export function QuickBiteProvider({ children }: { children: React.ReactNode }) {
         setActiveAccountId(nextActive);
         setShoppingByAccount(nextShopping);
         setSavedByAccount(nextSaved);
-      } catch {
+      } catch (err) {
+        errorLogger.captureStorageError('read', err as Error);
         // Ignore broken persisted state and keep defaults.
       } finally {
         if (mounted) {
@@ -95,23 +121,21 @@ export function QuickBiteProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // Debounced persist effect - fires when state changes but batches rapid updates
   useEffect(() => {
     if (loading) {
       return;
     }
 
-    const payload = JSON.stringify({
+    lastStateRef.current = {
       accounts,
       activeAccountId,
       shoppingByAccount,
       savedByAccount,
-    });
+    };
 
-    AsyncStorage.setItem(STORAGE_KEY, payload).catch((err) => {
-      console.error('[AsyncStorage] Failed to persist state:', err);
-      // In production, you'd want to notify Sentry/analytics here
-    });
-  }, [accounts, activeAccountId, loading, savedByAccount, shoppingByAccount]);
+    debouncedSave(lastStateRef.current);
+  }, [accounts, activeAccountId, loading, savedByAccount, shoppingByAccount, debouncedSave]);
 
   const activeAccount = useMemo(() => {
     return accounts.find((account) => account.id === activeAccountId) ?? guestAccount;
